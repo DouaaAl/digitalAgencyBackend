@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-      "build": "prisma generate && next build",
+    "build": "prisma generate && next build",
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "vercel-build": "prisma generate"
   },
   "keywords": [],
   "author": "",
@@ -20,11 +21,11 @@
     "express-session": "^1.18.1",
     "mongoose": "^8.16.2",
     "passport": "^0.7.0",
-    "passport-local": "^1.0.0",
-    "prisma": "^6.11.1"
+    "passport-local": "^1.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "prisma": "^6.11.1"
   },
   "description": ""
 }
