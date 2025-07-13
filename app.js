@@ -18,7 +18,7 @@ const analyticsRoutes = require('./routes/analytics');
 
 
 app.use(cors({
-  origin: "https://digital-agency-front-end-rosy.vercel.app",
+  origin: ["https://digital-agency-front-end-rosy.vercel.app", "https://digital-agency-front-end-rosy.vercel.app/login", "https://digital-agency-front-end-rosy.vercel.app/register"],
   credentials: true,
 }));
 app.use(express.json());
