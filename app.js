@@ -15,8 +15,6 @@ const posts = require("./routes/posts.js");
 const contacts = require("./routes/contact.js");
 const analyticsRoutes = require('./routes/analytics');
 
-
-
 app.use(cors({
   origin: ["https://digital-agency-front-end-rosy.vercel.app", "https://digital-agency-front-end-rosy.vercel.app/login", "https://digital-agency-front-end-rosy.vercel.app/register"],
   credentials: true,
@@ -27,7 +25,10 @@ app.use(session({
   secret: "your_secret_key",
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false } 
+  cookie: {
+    secure: true,
+    sameSite: "none" 
+  }
 }));
 
 app.use(passport.initialize());
