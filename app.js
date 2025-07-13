@@ -5,48 +5,47 @@ const session = require("express-session");
 const bcrypt = require("bcryptjs");
 const prisma = require('./utils/prisma');
 const cors = require("cors");
-
 const dotenv = require('dotenv');
+const app = express();
+
 dotenv.config();
 
-const app = express();
-// Routes
-const posts = require("./routes/posts.js");
-const contacts = require("./routes/contact.js");
-const analyticsRoutes = require('./routes/analytics');
+// ✅ Set origin exactly and no trailing slash
+const CLIENT_URL = "https://digital-agency-front-end-rosy.vercel.app";
 
-
-
+// ✅ Handle CORS with preflight support
 app.use(cors({
-  origin: "https://digital-agency-front-end-rosy.vercel.app",
+  origin: CLIENT_URL,
   credentials: true,
 }));
+
+app.options("*", cors()); // ✅ Handle preflight requests
+
 app.use(express.json());
 
+// ✅ Fix session for cross-site cookies (required in production)
 app.use(session({
-  secret: "your_secret_key",
+  secret: process.env.SESSION_SECRET || "your_secret_key",
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false } 
+  cookie: {
+    secure: true,             // ✅ Required on HTTPS (Vercel)
+    httpOnly: true,           // ✅ Best practice
+    sameSite: 'none',         // ✅ Required for cross-origin
+  }
 }));
 
 app.use(passport.initialize());
 app.use(passport.session());
 
+// ✅ Passport local strategy
 passport.use(new LocalStrategy(async (username, password, done) => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { username },
-    });
-
-    if (!user) {
-      return done(null, false, { message: "Incorrect username." });
-    }
+    const user = await prisma.user.findUnique({ where: { username } });
+    if (!user) return done(null, false, { message: "Incorrect username." });
 
     const isValid = await bcrypt.compare(password, user.password);
-    if (!isValid) {
-      return done(null, false, { message: "Incorrect password." });
-    }
+    if (!isValid) return done(null, false, { message: "Incorrect password." });
 
     return done(null, user);
   } catch (err) {
@@ -54,12 +53,7 @@ passport.use(new LocalStrategy(async (username, password, done) => {
   }
 }));
 
-
-passport.serializeUser((user, done) => {
-  done(null, user.id);
-});
-
-
+passport.serializeUser((user, done) => done(null, user.id));
 passport.deserializeUser(async (id, done) => {
   try {
     const user = await prisma.user.findUnique({ where: { id } });
@@ -69,27 +63,15 @@ passport.deserializeUser(async (id, done) => {
   }
 });
 
-
+// ✅ Register route
 app.post("/api/register", async (req, res) => {
   const { username, password } = req.body;
-
   try {
-    const existingUser = await prisma.user.findUnique({
-      where: { username },
-    });
-
-    if (existingUser) {
-      return res.status(409).json({ message: "Username already exists" });
-    }
+    const existingUser = await prisma.user.findUnique({ where: { username } });
+    if (existingUser) return res.status(409).json({ message: "Username already exists" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = await prisma.user.create({
-      data: {
-        username,
-        password: hashedPassword,
-      },
-    });
+    const newUser = await prisma.user.create({ data: { username, password: hashedPassword } });
 
     req.login(newUser, (err) => {
       if (err) return res.status(500).json({ message: "Registration succeeded but login failed" });
@@ -101,7 +83,7 @@ app.post("/api/register", async (req, res) => {
   }
 });
 
-
+// ✅ Login route
 app.post("/api/login", (req, res, next) => {
   passport.authenticate("local", (err, user, info) => {
     if (err) return next(err);
@@ -114,24 +96,28 @@ app.post("/api/login", (req, res, next) => {
   })(req, res, next);
 });
 
-
+// ✅ Logout
 app.post("/api/logout", (req, res) => {
   req.logout(() => {
     res.json({ message: "Logged out" });
   });
 });
 
+// ✅ Protected profile route
 app.get("/api/profile", (req, res) => {
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ message: "Not authenticated" });
-  }
+  if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
   res.json({ id: req.user.id, username: req.user.username });
 });
+
+// Other routes
+const posts = require("./routes/posts.js");
+const contacts = require("./routes/contact.js");
+const analyticsRoutes = require('./routes/analytics');
 
 app.use("/api/posts", posts);
 app.use("/api/contacts", contacts);
 app.use('/api/analytics', analyticsRoutes);
 
-
-
-app.listen(5000, () => console.log("server is working"));
+// Start server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`server is working on port ${PORT}`));
