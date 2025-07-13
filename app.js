@@ -10,28 +10,29 @@ const app = express();
 
 dotenv.config();
 
-// ✅ Set origin exactly and no trailing slash
 const CLIENT_URL = "https://digital-agency-front-end-rosy.vercel.app";
 
-// ✅ Handle CORS with preflight support
 app.use(cors({
   origin: CLIENT_URL,
   credentials: true,
 }));
 
-app.options("*", cors()); // ✅ Handle preflight requests
+app.options("*", cors({
+  origin: CLIENT_URL,
+  credentials: true,
+}));
 
 app.use(express.json());
 
-// ✅ Fix session for cross-site cookies (required in production)
+
 app.use(session({
   secret: process.env.SESSION_SECRET || "your_secret_key",
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: true,             // ✅ Required on HTTPS (Vercel)
-    httpOnly: true,           // ✅ Best practice
-    sameSite: 'none',         // ✅ Required for cross-origin
+    secure: true,             
+    httpOnly: true,           
+    sameSite: 'none',         
   }
 }));
 
